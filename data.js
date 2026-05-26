@@ -58,8 +58,8 @@ const PRODUCTS = {
     finalDestination: 'AECOC Valencia',
     container: 'IFCO BLL 6410',
     weight: '30 kg',
-    targetTempMin: 4,
-    targetTempMax: 5,
+    targetTempMin: 3,
+    targetTempMax: 10,
     image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop',
   },
   pimiento: {
@@ -70,8 +70,8 @@ const PRODUCTS = {
     finalDestination: 'AECOC Valencia',
     container: 'IFCO BLL 6410',
     weight: '15 kg',
-    targetTempMin: 4,
-    targetTempMax: 5,
+    targetTempMin: 3,
+    targetTempMax: 10,
     image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400&h=400&fit=crop',
   },
   pepino: {
@@ -82,8 +82,8 @@ const PRODUCTS = {
     finalDestination: 'AECOC Valencia',
     container: 'IFCO BLL 6410',
     weight: '15 kg',
-    targetTempMin: 4,
-    targetTempMax: 5,
+    targetTempMin: 3,
+    targetTempMax: 10,
     image: 'https://images.unsplash.com/photo-1604977042946-1eecc30f269e?w=400&h=400&fit=crop',
   },
 };
@@ -420,6 +420,8 @@ DEVICES.forEach(d => {
   const finalTemp = pointsForStats[pointsForStats.length - 1].avg;
   const variation = maxTemp - minTemp;
 
+  const product = PRODUCTS[d.product];
+
   d.journey = [
     {
       type: 'info',
@@ -448,8 +450,8 @@ DEVICES.forEach(d => {
         maxTemp: maxTemp.toFixed(2),
         minTemp: minTemp.toFixed(2),
         variation: variation.toFixed(2),
-        thresholdMin: 4,
-        thresholdMax: 5,
+        thresholdMin: product.targetTempMin,
+        thresholdMax: product.targetTempMax,
       },
     },
     {
