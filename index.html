@@ -244,10 +244,12 @@
   .tabs {
     display: flex; gap: 4px; margin-bottom: 16px;
     border-bottom: 1px solid #e5e7eb;
-    position: sticky; top: -1px;
+    position: sticky; top: 0;
     background: #f9fafb;
     z-index: 5;
-    padding-top: 4px;
+    /* Extiende el fondo más allá del propio contenedor para tapar
+       contenido que pueda scrollear por debajo cuando el tab está sticky */
+    box-shadow: 0 -24px 0 0 #f9fafb;
   }
   .tab {
     padding: 10px 18px;
@@ -302,7 +304,7 @@
   .chart-legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; font-size: 12px; color: #4b5563; }
   .chart-legend .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; background: white; }
-  svg.temp-chart { width: 100%; height: 280px; }
+  svg.temp-chart { width: 100%; height: 300px; display: block; }
 
   /* Journey */
   .journey-list { display: flex; flex-direction: column; gap: 10px; }
@@ -402,6 +404,275 @@
 
   /* Hidden helper */
   .hidden { display: none !important; }
+
+  /* Mobile-only helper (oculta en desktop) */
+  .mobile-only { display: none; }
+  .side-panel-backdrop { display: none; }
+  .route-banner { display: none; }
+
+  /* =========================================================
+     MOBILE STYLES (≤768px)
+     ========================================================= */
+  @media (max-width: 768px) {
+    body { font-size: 13px; }
+
+    /* Layout: la sidebar pasa a bottom nav */
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      height: 100vh;
+      height: 100dvh; /* dynamic viewport, evita problemas con barra de url */
+    }
+    .sidebar { display: none; }
+
+    /* Mobile-only helper visible */
+    .mobile-only { display: flex; }
+    .side-panel-backdrop { display: block; }
+    .route-banner { display: flex; }
+    .mobile-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      min-height: 52px;
+    }
+    .mobile-header img { height: 26px; width: auto; }
+    .mobile-header .mobile-title { font-size: 13px; font-weight: 600; color: #1f2937; }
+
+    /* Hide desktop header (Zona horaria / Unidades) */
+    .header { display: none; }
+
+    .main { height: 100%; }
+
+    /* Bottom nav */
+    .mobile-bottom-nav {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+      z-index: 1500;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+    }
+    .mobile-bottom-nav .nav-item {
+      flex: 1;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 4px;
+      border-radius: 0;
+      margin: 0;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .mobile-bottom-nav .nav-item svg { width: 22px; height: 22px; }
+    .mobile-bottom-nav .nav-item.active { background: transparent; }
+    .mobile-bottom-nav .nav-item:hover { background: transparent; }
+
+    /* Reservar espacio para el bottom nav */
+    .content { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+    #mapView, .device-detail { bottom: 0; }
+
+    /* Side panel se convierte en bottom sheet */
+    .side-panel-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .side-panel-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .side-panel {
+      top: auto;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      max-height: 75vh;
+      border-radius: 16px 16px 0 0;
+      transform: translateY(100%);
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.15);
+      margin-bottom: calc(58px + env(safe-area-inset-bottom));
+    }
+    .side-panel.open { transform: translateY(0); }
+    /* Cuando hay una ruta dibujada minimizamos el panel completamente */
+    .side-panel.minimized {
+      transform: translateY(100%);
+    }
+    .side-panel::before {
+      content: '';
+      position: absolute; top: 8px; left: 50%;
+      transform: translateX(-50%);
+      width: 36px; height: 4px;
+      background: #d1d5db;
+      border-radius: 2px;
+    }
+
+    /* Banner inferior cuando hay ruta dibujada y panel minimizado */
+    .route-banner {
+      position: absolute;
+      left: 12px; right: 12px;
+      bottom: calc(58px + 12px + env(safe-area-inset-bottom));
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+      z-index: 900;
+      transform: translateY(calc(100% + 80px));
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .route-banner.visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .route-banner-info {
+      display: flex; align-items: center; gap: 10px;
+      flex: 1; min-width: 0;
+    }
+    .route-banner-icon {
+      width: 32px; height: 32px;
+      background: #fee2e2;
+      color: #ef4444;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .route-banner-icon svg { width: 16px; height: 16px; }
+    .route-banner-title { font-size: 12px; font-weight: 600; color: #1f2937; }
+    .route-banner-sub {
+      font-size: 11px; color: #6b7280;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .route-banner-btn {
+      background: #16a34a; color: white;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .route-banner-close {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      color: #6b7280;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .route-banner-close:hover { background: #f3f4f6; }
+    .route-banner-close svg { width: 18px; height: 18px; }
+    .side-panel-header { padding: 18px 18px 14px 18px; }
+    .side-panel-header h3 { font-size: 15px; }
+    .side-panel-body { padding: 14px 18px 24px 18px; }
+
+    /* Device detail view */
+    .device-detail { padding: 16px 14px; }
+    .breadcrumb { font-size: 12px; }
+    .detail-header { gap: 10px; margin-bottom: 12px; }
+    .detail-title h1 { font-size: 18px; }
+    .detail-title h1 svg { width: 18px; height: 18px; }
+    .detail-title h1 span { font-size: 13px !important; }
+    .detail-actions .btn { padding: 6px 10px; font-size: 12px; }
+    .detail-actions .btn svg { width: 12px; height: 12px; }
+
+    /* Summary se apila */
+    .detail-summary {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 14px 16px;
+    }
+    .summary-row {
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .summary-row .label { min-width: auto; font-size: 12px; }
+    .summary-row .value { font-size: 12px; }
+
+    /* Tabs scrollables si no caben */
+    .tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      box-shadow: 0 -16px 0 0 #f9fafb;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      padding: 10px 12px;
+      font-size: 12px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Cards en una columna */
+    .detail-grid { grid-template-columns: 1fr; gap: 12px; }
+    .card { padding: 14px 16px; }
+    .card h2 { font-size: 14px; margin-bottom: 10px; }
+    .card .info-row { font-size: 12px; padding: 4px 0; }
+    .card .info-row .label { min-width: auto !important; display: block !important; margin-bottom: 1px; color: #6b7280; }
+    .card .info-row > div { display: flex; flex-direction: column; }
+
+    /* Información adicional: foto arriba, fields abajo */
+    .additional-info { grid-template-columns: 1fr; gap: 14px; }
+    .additional-info img {
+      aspect-ratio: 16/9;
+      width: 100%;
+      order: -1;
+    }
+    .additional-info-fields { grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+    .field-block .field-label { font-size: 11px; }
+    .field-block .field-value { font-size: 13px; }
+
+    /* Temperature chart wrap */
+    .temp-chart-wrap { padding: 14px 16px; }
+    .temp-chart-wrap h2 { font-size: 14px; }
+    svg.temp-chart { height: 220px; }
+    .chart-legend { gap: 10px; font-size: 11px; }
+
+    /* Journey */
+    .journey-item { font-size: 12px; }
+    .journey-row { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+    .journey-title { font-size: 13px; gap: 6px; }
+    .journey-title svg { width: 14px; height: 14px; }
+    .journey-title > span { flex: 1; min-width: 100%; }
+    .journey-meta { font-size: 11px; }
+    .journey-right { width: 100%; justify-content: flex-end; }
+    .journey-expanded { padding: 14px 16px; }
+    .journey-expanded-grid { grid-template-columns: 1fr; gap: 16px; }
+    .journey-stat-cells { gap: 8px; }
+    .journey-stat-cell-value { font-size: 16px; }
+    .journey-stat-cell-label { font-size: 11px; }
+    .journey-stat-footnote { font-size: 11px; }
+
+    /* Badges un pelín más pequeños */
+    .badge { font-size: 11px; padding: 3px 8px; }
+
+    /* Device list items */
+    .device-list-item { padding: 10px; }
+    .device-list-item .device-icon { width: 32px; height: 32px; }
+    .device-list-item .device-icon svg { width: 16px; height: 16px; }
+    .device-list-item .device-name { font-size: 13px; }
+    .device-list-item .device-sub { font-size: 11px; }
+
+    /* Panel actions: mantener buen touch target */
+    .panel-actions .btn { padding: 12px; font-size: 13px; }
+
+    /* Devices list view */
+    #devicesListView .card > div { grid-template-columns: 1fr !important; }
+  }
+
+  /* Pantallas muy pequeñas (≤380px) */
+  @media (max-width: 380px) {
+    .additional-info-fields { grid-template-columns: 1fr; }
+    .detail-actions { flex-wrap: wrap; }
+    .detail-actions .btn { flex: 1; min-width: 0; }
+    .summary-row { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
@@ -427,6 +698,12 @@
 
   <!-- ===== MAIN ===== -->
   <main class="main">
+    <!-- Mobile-only top header -->
+    <div class="mobile-header mobile-only">
+      <img src="./ifco-logo.svg" alt="IFCO">
+      <div class="mobile-title">TaaS · AECOC Valencia</div>
+    </div>
+
     <header class="header">
       <div class="header-info">
         <span><strong>Zona horaria:</strong> Europe/Madrid</span>
@@ -438,6 +715,9 @@
       <!-- MAP VIEW -->
       <div id="mapView">
         <div id="map"></div>
+
+        <!-- Backdrop para cerrar bottom sheet en móvil tocando fuera -->
+        <div class="side-panel-backdrop mobile-only" id="sidePanelBackdrop"></div>
 
         <!-- Side panel (Site or Device detail summary) -->
         <div class="side-panel" id="sidePanel">
@@ -459,11 +739,24 @@
 
     </div>
   </main>
+
+  <!-- Mobile-only bottom navigation -->
+  <nav class="mobile-bottom-nav mobile-only">
+    <div class="nav-item active" id="navMapMobile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+      <span>Map</span>
+    </div>
+    <div class="nav-item" id="navDevicesMobile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      <span>Devices</span>
+    </div>
+  </nav>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="./data.js?v=6"></script>
-<script src="./app.js?v=6"></script>
+<script src="./data.js?v=11"></script>
+<script src="./app.js?v=11"></script>
 </body>
 </html>

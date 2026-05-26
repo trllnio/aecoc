@@ -109,12 +109,39 @@ map.fitBounds(bounds, { padding: [80, 80] });
 const sidePanel = document.getElementById('sidePanel');
 const sidePanelTitle = document.getElementById('sidePanelTitle');
 const sidePanelBody = document.getElementById('sidePanelBody');
-document.getElementById('sidePanelClose').addEventListener('click', closeSidePanel);
+document.getElementById('sidePanelClose').addEventListener('click', softCloseSidePanel);
 
-function openSidePanel() { sidePanel.classList.add('open'); }
+const sidePanelBackdrop = document.getElementById('sidePanelBackdrop');
+
+function openSidePanel() {
+  sidePanel.classList.add('open');
+  sidePanel.classList.remove('minimized');
+  if (sidePanelBackdrop) sidePanelBackdrop.classList.add('open');
+}
 function closeSidePanel() {
   sidePanel.classList.remove('open');
+  sidePanel.classList.remove('minimized');
+  if (sidePanelBackdrop) sidePanelBackdrop.classList.remove('open');
   clearRoute();
+}
+
+// Handler especial para el botón X y el backdrop en móvil:
+// si hay ruta dibujada, minimizar el panel en lugar de cerrarlo
+// (para que el usuario pueda seguir viendo la ruta sin perderla).
+function softCloseSidePanel() {
+  if (state.routeLine && window.matchMedia('(max-width: 768px)').matches) {
+    sidePanel.classList.add('minimized');
+    if (sidePanelBackdrop) sidePanelBackdrop.classList.remove('open');
+    // Asegurar que el banner está visible
+    const d = getDeviceById(state.routeDeviceId);
+    if (d) showRouteBanner(d);
+  } else {
+    closeSidePanel();
+  }
+}
+
+if (sidePanelBackdrop) {
+  sidePanelBackdrop.addEventListener('click', softCloseSidePanel);
 }
 
 function openSitePanel(siteId) {
@@ -232,11 +259,64 @@ function drawRoute(deviceId) {
     lineJoin: 'round',
   }).addTo(map);
 
-  // Marker resaltado en el destino
-  map.fitBounds(state.routeLine.getBounds(), { padding: [60, 60] });
+  state.routeDeviceId = deviceId;
+
+  // En móvil: minimizar el bottom sheet para no tapar la ruta y mostrar
+  // un banner inferior con el nombre del device para reabrir el panel.
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  if (isMobile) {
+    sidePanel.classList.add('minimized');
+    if (sidePanelBackdrop) sidePanelBackdrop.classList.remove('open');
+    showRouteBanner(d);
+    // El fitBounds tiene que respetar que el banner ocupa unos ~80px abajo
+    setTimeout(() => {
+      map.fitBounds(state.routeLine.getBounds(), { padding: [40, 40], paddingBottomRight: [40, 120] });
+    }, 250);
+  } else {
+    map.fitBounds(state.routeLine.getBounds(), { padding: [60, 60] });
+  }
 }
 function clearRoute() {
   if (state.routeLine) { map.removeLayer(state.routeLine); state.routeLine = null; }
+  state.routeDeviceId = null;
+  hideRouteBanner();
+  sidePanel.classList.remove('minimized');
+}
+
+// Banner inferior que aparece cuando hay ruta dibujada en móvil
+function showRouteBanner(device) {
+  let banner = document.getElementById('routeBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'routeBanner';
+    banner.className = 'route-banner mobile-only';
+    document.querySelector('.content').appendChild(banner);
+  }
+  banner.innerHTML = `
+    <div class="route-banner-info">
+      <div class="route-banner-icon">${ICONS.route}</div>
+      <div>
+        <div class="route-banner-title">Ruta dibujada</div>
+        <div class="route-banner-sub">${device.name} · ${device.mac}</div>
+      </div>
+    </div>
+    <button class="route-banner-btn" id="routeBannerReopen">Detalles</button>
+    <button class="route-banner-close" id="routeBannerClose" aria-label="Cerrar ruta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  `;
+  banner.classList.add('visible');
+  document.getElementById('routeBannerReopen').addEventListener('click', () => {
+    sidePanel.classList.remove('minimized');
+    if (sidePanelBackdrop) sidePanelBackdrop.classList.add('open');
+  });
+  document.getElementById('routeBannerClose').addEventListener('click', () => {
+    closeSidePanel();
+  });
+}
+function hideRouteBanner() {
+  const banner = document.getElementById('routeBanner');
+  if (banner) banner.classList.remove('visible');
 }
 
 // ---------- DEVICE DETAIL VIEW ----------
@@ -250,9 +330,23 @@ function showView(view) {
   deviceDetailView.classList.toggle('hidden', view !== 'device');
   devicesListView.classList.toggle('hidden', view !== 'devices');
 
-  // Sidebar active state
-  document.getElementById('navMap').classList.toggle('active', view === 'map');
-  document.getElementById('navDevices').classList.toggle('active', view === 'devices' || view === 'device');
+  // Sidebar (desktop) + bottom nav (mobile) active state
+  const mapActive = view === 'map';
+  const devicesActive = view === 'devices' || view === 'device';
+  document.getElementById('navMap').classList.toggle('active', mapActive);
+  document.getElementById('navDevices').classList.toggle('active', devicesActive);
+  const navMapM = document.getElementById('navMapMobile');
+  const navDevM = document.getElementById('navDevicesMobile');
+  if (navMapM) navMapM.classList.toggle('active', mapActive);
+  if (navDevM) navDevM.classList.toggle('active', devicesActive);
+
+  // El banner de ruta sólo es visible en la vista del mapa
+  if (view !== 'map') hideRouteBanner();
+  else if (state.routeLine && state.routeDeviceId) {
+    // Si volvemos al mapa y la ruta sigue dibujada, restauramos el banner en móvil
+    const d = getDeviceById(state.routeDeviceId);
+    if (d && window.matchMedia('(max-width: 768px)').matches) showRouteBanner(d);
+  }
 
   // Forzar refresh del mapa cuando volvemos a él (Leaflet lo necesita)
   if (view === 'map') setTimeout(() => map.invalidateSize(), 50);
@@ -334,13 +428,12 @@ function goToDeviceDetail(deviceId) {
 
     <div class="temp-chart-wrap" id="section-insights">
       <h2>Insights · Temperatura</h2>
-      <div class="temp-chart-subtitle">Últimos 7 días</div>
+      <div class="temp-chart-subtitle">Últimos 7 días — Zona segura del producto: <strong style="color: #16a34a;">${product.targetTempMin}–${product.targetTempMax} °C</strong></div>
       <div class="chart-legend">
         <div class="legend-item"><span class="legend-dot" style="border-color: #22c55e;"></span> Media</div>
         <div class="legend-item"><span class="legend-dot" style="border-color: #ef4444;"></span> Máximo</div>
         <div class="legend-item"><span class="legend-dot" style="border-color: #a855f7;"></span> Mínimo</div>
-        <div class="legend-item"><span class="legend-dot" style="border-color: #fca5a5;"></span> Umbral máx.: 30 °C</div>
-        <div class="legend-item"><span class="legend-dot" style="border-color: #93c5fd;"></span> Umbral mín.: -10 °C</div>
+        <div class="legend-item"><span class="legend-dot" style="background: #dcfce7; border-color: #16a34a;"></span> Zona segura</div>
       </div>
       <div id="tempChartContainer"></div>
     </div>
@@ -527,25 +620,55 @@ function renderJourneyItem(j, device) {
 function renderTempChart(device) {
   const container = document.getElementById('tempChartContainer');
   const series = device.tempSeries;
-  const W = 900, H = 280, PAD_L = 50, PAD_R = 20, PAD_T = 20, PAD_B = 40;
-  const minY = -15, maxY = 35;
-  const yScale = v => PAD_T + (1 - (v - minY) / (maxY - minY)) * (H - PAD_T - PAD_B);
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+  // Auto-rango del eje Y: nos centramos en los datos reales con un margen,
+  // pero SIEMPRE incluimos toda la zona segura para que sea visible y
+  // se vea claramente que los datos están dentro de ella.
+  const product = getProductOf(device);
+  const safeLo = product.targetTempMin;
+  const safeHi = product.targetTempMax;
+
+  const allValues = series.flatMap(p => [p.min, p.avg, p.max]);
+  const dataMin = Math.min(...allValues);
+  const dataMax = Math.max(...allValues);
+  // Margen de 2°C arriba y abajo, redondeado a enteros.
+  // Aseguramos que la zona segura completa entra en el rango visible.
+  let yLo = Math.floor(Math.min(dataMin, safeLo) - 2);
+  let yHi = Math.ceil(Math.max(dataMax, safeHi) + 2);
+  // Asegurar un rango mínimo de 8°C para que no quede demasiado "estirada"
+  if (yHi - yLo < 8) {
+    const mid = (yHi + yLo) / 2;
+    yLo = Math.floor(mid - 4);
+    yHi = Math.ceil(mid + 4);
+  }
+
+  const W = isMobile ? 600 : 1400;
+  const H = isMobile ? 260 : 300;
+  const PAD_L = isMobile ? 36 : 50;
+  const PAD_R = isMobile ? 16 : 20;
+  const PAD_T = 20;
+  const PAD_B = isMobile ? 36 : 40;
+
+  const yScale = v => PAD_T + (1 - (v - yLo) / (yHi - yLo)) * (H - PAD_T - PAD_B);
   const xScale = i => PAD_L + (i / (series.length - 1)) * (W - PAD_L - PAD_R);
 
-  // Background bands (umbrales)
-  const yMax30 = yScale(30);
-  const yMin10 = yScale(-10);
+  // Banda verde de "zona segura" (umbral aceptable definido por el producto)
+  const ySafeHi = yScale(safeHi);
+  const ySafeLo = yScale(safeLo);
 
   // Polylines
   const avgPath = series.map((p, i) => `${xScale(i)},${yScale(p.avg)}`).join(' ');
   const maxPath = series.map((p, i) => `${xScale(i)},${yScale(p.max)}`).join(' ');
   const minPath = series.map((p, i) => `${xScale(i)},${yScale(p.min)}`).join(' ');
 
-  // Y axis labels
-  const yTicks = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35];
+  // Y ticks: cada 1°C en mobile, cada 2°C en desktop (dado que el rango es pequeño)
+  const tickStep = 1;
+  const yTicks = [];
+  for (let t = yLo; t <= yHi; t += tickStep) yTicks.push(t);
   const yTickEls = yTicks.map(t => `
     <line x1="${PAD_L}" y1="${yScale(t)}" x2="${W - PAD_R}" y2="${yScale(t)}" stroke="#f3f4f6" stroke-width="1"/>
-    <text x="${PAD_L - 8}" y="${yScale(t) + 4}" text-anchor="end" font-size="11" fill="#9ca3af">${t}</text>
+    <text x="${PAD_L - 6}" y="${yScale(t) + 3}" text-anchor="end" font-size="${isMobile ? 10 : 11}" fill="#9ca3af">${t}</text>
   `).join('');
 
   // X axis labels (días)
@@ -555,31 +678,37 @@ function renderTempChart(device) {
     d.setDate(d.getDate() - i);
     days.push(d);
   }
+  // En mobile solo cada 2 días para que no se solapen
   const xLabelEls = days.map((d, i) => {
+    if (isMobile && i % 2 !== 0 && i !== 6) return '';
     const x = PAD_L + (i / 6) * (W - PAD_L - PAD_R);
     const label = `${d.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]}`;
-    return `<text x="${x}" y="${H - 16}" text-anchor="middle" font-size="11" fill="#6b7280">${label}</text>`;
+    return `<text x="${x}" y="${H - 14}" text-anchor="middle" font-size="${isMobile ? 10 : 11}" fill="#6b7280">${label}</text>`;
   }).join('');
+
+  // Puntos de datos como pequeños círculos en la línea media (refuerzan que son lecturas)
+  const dataPoints = series.map((p, i) =>
+    `<circle cx="${xScale(i)}" cy="${yScale(p.avg)}" r="${isMobile ? 1.8 : 2}" fill="#22c55e"/>`
+  ).join('');
 
   container.innerHTML = `
     <svg class="temp-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-      <!-- Banda verde "safe" entre umbrales -->
-      <rect x="${PAD_L}" y="${yMax30}" width="${W - PAD_L - PAD_R}" height="${yMin10 - yMax30}" fill="#dcfce7" opacity="0.5"/>
-      <!-- Líneas de umbral -->
-      <line x1="${PAD_L}" y1="${yMax30}" x2="${W - PAD_R}" y2="${yMax30}" stroke="#ef4444" stroke-dasharray="6,4" stroke-width="1.5"/>
-      <line x1="${PAD_L}" y1="${yMin10}" x2="${W - PAD_R}" y2="${yMin10}" stroke="#3b82f6" stroke-dasharray="6,4" stroke-width="1.5"/>
+      <!-- Banda verde "zona segura" (umbral del producto) -->
+      <rect x="${PAD_L}" y="${ySafeHi}" width="${W - PAD_L - PAD_R}" height="${ySafeLo - ySafeHi}" fill="#dcfce7" opacity="0.7"/>
+      <!-- Líneas de la zona segura del producto -->
+      <line x1="${PAD_L}" y1="${ySafeHi}" x2="${W - PAD_R}" y2="${ySafeHi}" stroke="#16a34a" stroke-dasharray="4,3" stroke-width="1"/>
+      <line x1="${PAD_L}" y1="${ySafeLo}" x2="${W - PAD_R}" y2="${ySafeLo}" stroke="#16a34a" stroke-dasharray="4,3" stroke-width="1"/>
       <!-- Grid Y -->
       ${yTickEls}
       <!-- Eje Y label -->
-      <text x="12" y="${H / 2}" font-size="11" fill="#6b7280" transform="rotate(-90 12 ${H / 2})" text-anchor="middle">Temperatura (°C)</text>
+      <text x="${isMobile ? 10 : 12}" y="${H / 2}" font-size="${isMobile ? 10 : 11}" fill="#6b7280" transform="rotate(-90 ${isMobile ? 10 : 12} ${H / 2})" text-anchor="middle">Temperatura (°C)</text>
       <!-- Polylines -->
-      <polyline points="${maxPath}" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.9"/>
-      <polyline points="${minPath}" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.9"/>
-      <polyline points="${avgPath}" fill="none" stroke="#22c55e" stroke-width="2.5"/>
+      <polyline points="${maxPath}" fill="none" stroke="#ef4444" stroke-width="${isMobile ? 1.5 : 2}" opacity="0.85"/>
+      <polyline points="${minPath}" fill="none" stroke="#a855f7" stroke-width="${isMobile ? 1.5 : 2}" opacity="0.85"/>
+      <polyline points="${avgPath}" fill="none" stroke="#22c55e" stroke-width="${isMobile ? 2 : 2.5}"/>
+      ${dataPoints}
       <!-- X labels -->
       ${xLabelEls}
-      <!-- Eje X label -->
-      <text x="${W / 2}" y="${H - 2}" font-size="11" fill="#6b7280" text-anchor="middle">Tiempo (días)</text>
     </svg>
   `;
 }
@@ -605,10 +734,15 @@ function renderDevicesList() {
 }
 
 // ---------- NAV ----------
-document.getElementById('navMap').addEventListener('click', () => {
+function goToMapView() {
   showView('map');
   closeSidePanel();
-});
-document.getElementById('navDevices').addEventListener('click', () => {
-  renderDevicesList();
-});
+}
+document.getElementById('navMap').addEventListener('click', goToMapView);
+document.getElementById('navDevices').addEventListener('click', () => renderDevicesList());
+
+// Mobile bottom nav
+const navMapMobile = document.getElementById('navMapMobile');
+const navDevicesMobile = document.getElementById('navDevicesMobile');
+if (navMapMobile) navMapMobile.addEventListener('click', goToMapView);
+if (navDevicesMobile) navDevicesMobile.addEventListener('click', () => renderDevicesList());
