@@ -8,10 +8,10 @@
 // geofence: array de [lat, lng] formando el polígono (lo dibuja Leaflet en verde)
 const SITES = [
   {
-    id: 'site-nijar',
-    name: 'Grower Almería - Níjar',
-    type: 'grower',
-    address: 'Carretera Níjar la Cañada s/n, Almería',
+    id: "site-nijar",
+    name: "Grower Almería - Níjar",
+    type: "grower",
+    address: "Carretera Níjar la Cañada s/n, Almería",
     coords: [36.8433, -2.3948],
     geofence: [
       [36.8445, -2.3965],
@@ -21,10 +21,10 @@ const SITES = [
     ],
   },
   {
-    id: 'site-elejido',
-    name: 'Grower Almería - El Ejido',
-    type: 'grower',
-    address: 'Paraje Diseminado Los Majales, 39 CP04700 El Ejido, Almería',
+    id: "site-elejido",
+    name: "Grower Almería - El Ejido",
+    type: "grower",
+    address: "Paraje Diseminado Los Majales, 39 CP04700 El Ejido, Almería",
     coords: [36.7209, -2.8404],
     geofence: [
       [36.7221, -2.8421],
@@ -34,10 +34,10 @@ const SITES = [
     ],
   },
   {
-    id: 'site-aecoc',
-    name: 'AECOC Valencia - Palau de Congressos',
-    type: 'hub',
-    address: 'Av. de les Corts Valencianes, 60, 46015 València',
+    id: "site-aecoc",
+    name: "AECOC Valencia - Palau de Congressos",
+    type: "hub",
+    address: "Av. de les Corts Valencianes, 60, 46015 València",
     coords: [39.4962, -0.4021],
     geofence: [
       [39.4972, -0.4036],
@@ -51,40 +51,43 @@ const SITES = [
 /* ---------- PRODUCTOS ---------- */
 const PRODUCTS = {
   tomate: {
-    name: 'Tomate Pera',
-    variety: 'Heredero',
-    origin: 'España (Almería)',
-    pickedAt: '27/05/2026',
-    finalDestination: 'AECOC Valencia',
-    container: 'IFCO BLL 6410',
-    weight: '30 kg',
+    name: "Tomate Pera",
+    variety: "Heredero",
+    origin: "Vicasol - El Ejido, Almería, ES",
+    pickedAt: "27/05/2026",
+    finalDestination: "AECOC Valencia",
+    container: "IFCO BLL 6410",
+    weight: "30 kg",
     targetTempMin: 3,
-    targetTempMax: 10,
-    image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop',
+    targetTempMax: 6,
+    image:
+      "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop",
   },
   pimiento: {
-    name: 'Pimiento Verde Italiano',
-    variety: 'Delice',
-    origin: 'España (Almería)',
-    pickedAt: '27/05/2026',
-    finalDestination: 'AECOC Valencia',
-    container: 'IFCO BLL 6410',
-    weight: '15 kg',
+    name: "Pimiento Verde Italiano",
+    variety: "Delice",
+    origin: "Vicasol - El Ejido, Almería, ES",
+    pickedAt: "27/05/2026",
+    finalDestination: "AECOC Valencia",
+    container: "IFCO BLL 6410",
+    weight: "15 kg",
     targetTempMin: 3,
-    targetTempMax: 10,
-    image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400&h=400&fit=crop',
+    targetTempMax: 6,
+    image:
+      "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400&h=400&fit=crop",
   },
   pepino: {
-    name: 'Pepino Español',
-    variety: 'Ocaña',
-    origin: 'España (Almería)',
-    pickedAt: '27/05/2026',
-    finalDestination: 'AECOC Valencia',
-    container: 'IFCO BLL 6410',
-    weight: '15 kg',
+    name: "Pepino Español",
+    variety: "Ocaña",
+    origin: "Vicasol - El Ejido, Almería, ES",
+    pickedAt: "27/05/2026",
+    finalDestination: "AECOC Valencia",
+    container: "IFCO BLL 6410",
+    weight: "15 kg",
     targetTempMin: 3,
-    targetTempMax: 10,
-    image: 'https://images.unsplash.com/photo-1604977042946-1eecc30f269e?w=400&h=400&fit=crop',
+    targetTempMax: 6,
+    image:
+      "https://images.unsplash.com/photo-1604977042946-1eecc30f269e?w=400&h=400&fit=crop",
   },
 };
 
@@ -199,7 +202,7 @@ const ROUTE_NIJAR_TO_VALENCIA = [
   [39.450115, -0.406995],
   [39.495926, -0.419527],
   [39.492721, -0.406606],
-  [39.4962, -0.4021]
+  [39.4962, -0.4021],
 ];
 
 const ROUTE_ELEJIDO_TO_VALENCIA = [
@@ -312,7 +315,7 @@ const ROUTE_ELEJIDO_TO_VALENCIA = [
   [39.439216, -0.393151],
   [39.490476, -0.431984],
   [39.492091, -0.407841],
-  [39.4962, -0.4021]
+  [39.4962, -0.4021],
 ];
 
 /* ---------- DEVICES ----------
@@ -322,19 +325,96 @@ const ROUTE_ELEJIDO_TO_VALENCIA = [
 */
 const DEVICES = [
   // ---- TOMATE PERA (5) - desde El Ejido ----
-  { id: 1,  mac: '48:A3:BD:27:82:36', name: 'Super Node M', type: 'super_node', product: 'tomate', origin: 'site-elejido' },
-  { id: 2,  mac: '48:A3:BD:27:82:37', name: 'Super Node M', type: 'super_node', product: 'tomate', origin: 'site-elejido' },
-  { id: 3,  mac: '48:A3:BD:27:82:38', name: 'Super Node M', type: 'super_node', product: 'tomate', origin: 'site-elejido' },
-  { id: 4,  mac: '48:A3:BD:27:82:39', name: 'Super Node M', type: 'super_node', product: 'tomate', origin: 'site-elejido' },
-  { id: 5,  mac: '48:A3:BD:27:82:3A', name: 'Super Node M', type: 'super_node', product: 'tomate', origin: 'site-elejido' },
+  {
+    id: 1,
+    mac: "48:A3:BD:27:82:36",
+    name: "Super Node M",
+    type: "super_node",
+    product: "tomate",
+    origin: "site-elejido",
+  },
+  {
+    id: 2,
+    mac: "48:A3:BD:27:82:37",
+    name: "Super Node M",
+    type: "super_node",
+    product: "tomate",
+    origin: "site-elejido",
+  },
+  {
+    id: 3,
+    mac: "48:A3:BD:27:82:38",
+    name: "Super Node M",
+    type: "super_node",
+    product: "tomate",
+    origin: "site-elejido",
+  },
+  {
+    id: 4,
+    mac: "48:A3:BD:27:82:39",
+    name: "Super Node M",
+    type: "super_node",
+    product: "tomate",
+    origin: "site-elejido",
+  },
+  {
+    id: 5,
+    mac: "48:A3:BD:27:82:3A",
+    name: "Super Node M",
+    type: "super_node",
+    product: "tomate",
+    origin: "site-elejido",
+  },
   // ---- PIMIENTO (3) - desde El Ejido ----
-  { id: 6,  mac: '48:A3:BD:27:82:3B', name: 'Super Node M', type: 'super_node', product: 'pimiento', origin: 'site-elejido' },
-  { id: 7,  mac: '48:A3:BD:27:82:3C', name: 'Super Node M', type: 'super_node', product: 'pimiento', origin: 'site-elejido' },
-  { id: 8,  mac: '48:A3:BD:27:82:3D', name: 'Super Node M', type: 'super_node', product: 'pimiento', origin: 'site-elejido' },
+  {
+    id: 6,
+    mac: "48:A3:BD:27:82:3B",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pimiento",
+    origin: "site-elejido",
+  },
+  {
+    id: 7,
+    mac: "48:A3:BD:27:82:3C",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pimiento",
+    origin: "site-elejido",
+  },
+  {
+    id: 8,
+    mac: "48:A3:BD:27:82:3D",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pimiento",
+    origin: "site-elejido",
+  },
   // ---- PEPINO (3) - desde El Ejido ----
-  { id: 9,  mac: '48:A3:BD:27:82:3E', name: 'Super Node M', type: 'super_node', product: 'pepino', origin: 'site-elejido' },
-  { id: 10, mac: '48:A3:BD:27:82:3F', name: 'Super Node M', type: 'super_node', product: 'pepino', origin: 'site-elejido' },
-  { id: 11, mac: '48:A3:BD:27:82:40', name: 'Super Node M', type: 'super_node', product: 'pepino', origin: 'site-elejido' },
+  {
+    id: 9,
+    mac: "48:A3:BD:27:82:3E",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pepino",
+    origin: "site-elejido",
+  },
+  {
+    id: 10,
+    mac: "48:A3:BD:27:82:3F",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pepino",
+    origin: "site-elejido",
+  },
+  {
+    id: 11,
+    mac: "48:A3:BD:27:82:40",
+    name: "Super Node M",
+    type: "super_node",
+    product: "pepino",
+    origin: "site-elejido",
+  },
 ];
 
 /* ---------- POSICIONES DENTRO DE LA GEOFENCE DEL PALAU ----------
@@ -345,10 +425,11 @@ const DEVICES = [
 function _distributeDevicesInGeofence() {
   // Punto base: ligeramente desplazado del centro del Palau, en una "esquina"
   // del recinto, simulando la zona donde está el stand/palet.
-  const base = [39.49640, -0.40180]; // ~25m al noreste del centro del site
+  const base = [39.4964, -0.4018]; // ~25m al noreste del centro del site
   const positions = [];
   // Grid 4x3 muy compacta: ~6m de paso (0.00006° lat ≈ 6.7m, 0.00007° lon ≈ 6m en lat 39.5)
-  const cols = 4, rows = 3;
+  const cols = 4,
+    rows = 3;
   const stepLat = 0.00006;
   const stepLon = 0.00008;
   let i = 0;
@@ -364,7 +445,9 @@ function _distributeDevicesInGeofence() {
   return positions;
 }
 const _devicePositions = _distributeDevicesInGeofence();
-DEVICES.forEach((d, i) => { d.position = _devicePositions[i]; });
+DEVICES.forEach((d, i) => {
+  d.position = _devicePositions[i];
+});
 
 /* ---------- SERIE DE TEMPERATURA ----------
    Generamos una serie de 7 días con variación 4-5 °C (todo perfecto).
@@ -380,10 +463,12 @@ function _generateTempSeries(seed) {
   const days = 7;
   const pointsPerDay = 6; // un punto cada 4h
   const series = [];
-  const now = new Date('2026-05-26T11:18:00');
+  const now = new Date("2026-05-26T11:18:00");
   for (let d = days - 1; d >= 0; d--) {
     for (let p = 0; p < pointsPerDay; p++) {
-      const ts = new Date(now.getTime() - (d * 24 + (pointsPerDay - 1 - p) * 4) * 3600 * 1000);
+      const ts = new Date(
+        now.getTime() - (d * 24 + (pointsPerDay - 1 - p) * 4) * 3600 * 1000,
+      );
       // Mantén la temperatura entre 4 y 5 con micro-variaciones
       const base = 4.0 + next() * 1.0; // 4.0 - 5.0
       const avg = parseFloat(base.toFixed(2));
@@ -394,28 +479,33 @@ function _generateTempSeries(seed) {
   }
   return series;
 }
-DEVICES.forEach(d => { d.tempSeries = _generateTempSeries(d.id); });
+DEVICES.forEach((d) => {
+  d.tempSeries = _generateTempSeries(d.id);
+});
 
 /* ---------- JOURNEY DE CADA DEVICE ----------
    Cronología coherente con el "ahora" de la demo (26 May 2026, 11:18).
    Ordenado del más reciente al más antiguo.
 */
-DEVICES.forEach(d => {
-  const originSite = SITES.find(s => s.id === d.origin);
+DEVICES.forEach((d) => {
+  const originSite = SITES.find((s) => s.id === d.origin);
 
   // Calculamos stats de temperatura SOLO de los puntos durante el trayecto
   // (desde "ruta iniciada 25 May 09:15" hasta "primera vista en destino 25 May 22:30")
   // Filtramos los puntos de la serie que caigan en esa ventana.
-  const routeStart = new Date('2026-05-25T09:15:00');
-  const routeEnd = new Date('2026-05-25T22:30:00');
-  const routePoints = d.tempSeries.filter(p => p.ts >= routeStart && p.ts <= routeEnd);
+  const routeStart = new Date("2026-05-25T09:15:00");
+  const routeEnd = new Date("2026-05-25T22:30:00");
+  const routePoints = d.tempSeries.filter(
+    (p) => p.ts >= routeStart && p.ts <= routeEnd,
+  );
   // Si por alguna razón no hay puntos en la ventana, cogemos los últimos antes del fin de ruta
-  const pointsForStats = routePoints.length > 0
-    ? routePoints
-    : d.tempSeries.filter(p => p.ts <= routeEnd).slice(-4);
+  const pointsForStats =
+    routePoints.length > 0
+      ? routePoints
+      : d.tempSeries.filter((p) => p.ts <= routeEnd).slice(-4);
 
-  const maxTemp = Math.max(...pointsForStats.map(p => p.max));
-  const minTemp = Math.min(...pointsForStats.map(p => p.min));
+  const maxTemp = Math.max(...pointsForStats.map((p) => p.max));
+  const minTemp = Math.min(...pointsForStats.map((p) => p.min));
   // Temperatura "final" (al llegar al destino): el último punto antes del cierre
   const finalTemp = pointsForStats[pointsForStats.length - 1].avg;
   const variation = maxTemp - minTemp;
@@ -424,26 +514,27 @@ DEVICES.forEach(d => {
 
   d.journey = [
     {
-      type: 'info',
-      title: 'Lectura QR de visitante en stand AECOC',
-      icon: 'qr',
-      timestamp: '26 May 2026, 11:18',
+      type: "info",
+      title: "Lectura QR de visitante en stand AECOC",
+      icon: "qr",
+      timestamp: "26 May 2026, 11:18",
     },
     {
-      type: 'info',
-      title: 'Llegada al stand AECOC',
-      icon: 'check',
-      timestamp: '26 May 2026, 08:30',
+      type: "info",
+      title: "Llegada al stand AECOC",
+      icon: "check",
+      timestamp: "26 May 2026, 08:30",
     },
     {
-      type: 'finished',
-      title: 'Ruta finalizada de',
+      type: "finished",
+      title: "Ruta finalizada de",
       siteLabel: originSite.name,
-      siteLabel2: 'AECOC Valencia',
-      siteType: 'grower',
-      siteType2: 'hub',
-      icon: 'route',
-      timestamp: 'Última vista en origen: 25 May 2026, 18:42 — Primera vista en destino: 25 May 2026, 22:30',
+      siteLabel2: "AECOC Valencia",
+      siteType: "grower",
+      siteType2: "hub",
+      icon: "route",
+      timestamp:
+        "Última vista en origen: 25 May 2026, 18:42 — Primera vista en destino: 25 May 2026, 22:30",
       expandable: true,
       routeStats: {
         finalTemp: finalTemp.toFixed(2),
@@ -455,29 +546,37 @@ DEVICES.forEach(d => {
       },
     },
     {
-      type: 'info',
-      title: 'Información del producto actualizada',
-      icon: 'info',
-      timestamp: '25 May 2026, 08:00',
+      type: "info",
+      title: "Información del producto actualizada",
+      icon: "info",
+      timestamp: "25 May 2026, 08:00",
       expandable: true,
     },
     {
-      type: 'info',
-      title: 'Dispositivo activado en origen',
-      icon: 'check',
-      timestamp: '25 May 2026, 07:45',
+      type: "info",
+      title: "Dispositivo activado en origen",
+      icon: "check",
+      timestamp: "25 May 2026, 07:45",
     },
   ];
 });
 
 /* ---------- HELPERS PÚBLICOS ---------- */
-function getDeviceById(id) { return DEVICES.find(d => d.id === id); }
-function getSiteById(id) { return SITES.find(s => s.id === id); }
-function getProductOf(device) { return PRODUCTS[device.product]; }
+function getDeviceById(id) {
+  return DEVICES.find((d) => d.id === id);
+}
+function getSiteById(id) {
+  return SITES.find((s) => s.id === id);
+}
+function getProductOf(device) {
+  return PRODUCTS[device.product];
+}
 function getRouteFor(device) {
-  return device.origin === 'site-nijar' ? ROUTE_NIJAR_TO_VALENCIA : ROUTE_ELEJIDO_TO_VALENCIA;
+  return device.origin === "site-nijar"
+    ? ROUTE_NIJAR_TO_VALENCIA
+    : ROUTE_ELEJIDO_TO_VALENCIA;
 }
 function getDevicesAtSite(siteId) {
   // Todos los dispositivos están en el site del Palau
-  return siteId === 'site-aecoc' ? DEVICES.slice() : [];
+  return siteId === "site-aecoc" ? DEVICES.slice() : [];
 }
