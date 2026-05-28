@@ -57,7 +57,7 @@ const PRODUCTS = {
     pickedAt: "27/05/2026",
     finalDestination: "AECOC Valencia",
     container: "IFCO BLL 6410",
-    weight: "30 kg",
+    weight: "6 kg",
     targetTempMin: 3,
     targetTempMax: 6,
     image:
@@ -70,7 +70,7 @@ const PRODUCTS = {
     pickedAt: "27/05/2026",
     finalDestination: "AECOC Valencia",
     container: "IFCO BLL 6410",
-    weight: "15 kg",
+    weight: "5 kg",
     targetTempMin: 3,
     targetTempMax: 6,
     image:
@@ -83,7 +83,7 @@ const PRODUCTS = {
     pickedAt: "27/05/2026",
     finalDestination: "AECOC Valencia",
     container: "IFCO BLL 6410",
-    weight: "15 kg",
+    weight: "5 kg",
     targetTempMin: 3,
     targetTempMax: 6,
     image:
@@ -460,23 +460,30 @@ function _generateTempSeries(seed) {
     rng = (rng * 9301 + 49297) % 233280;
     return rng / 233280;
   };
-  const days = 7;
-  const pointsPerDay = 6; // un punto cada 4h
+  // El dispositivo empieza a registrar al activarse en origen (27 May 07:45).
+  // La "última vista" es siempre 12h antes del momento en que el usuario
+  // abre la web — así la demo se siente "viva" en cualquier fecha.
+  const activation = new Date("2026-05-27T07:45:00");
+  const lastSeen = new Date(Date.now() - 12 * 3600 * 1000);
+  const intervalMs = 4 * 3600 * 1000; // un punto cada 4h
+  // Garantizamos al menos un par de puntos por si se testea muy cerca de la activación
+  const end = Math.max(lastSeen.getTime(), activation.getTime() + 2 * intervalMs);
   const series = [];
-  const now = new Date("2026-05-26T11:18:00");
-  for (let d = days - 1; d >= 0; d--) {
-    for (let p = 0; p < pointsPerDay; p++) {
-      const ts = new Date(
-        now.getTime() - (d * 24 + (pointsPerDay - 1 - p) * 4) * 3600 * 1000,
-      );
-      // Mantén la temperatura entre 4 y 5 con micro-variaciones
-      const base = 4.0 + next() * 1.0; // 4.0 - 5.0
-      const avg = parseFloat(base.toFixed(2));
-      const min = parseFloat((base - 0.1 - next() * 0.2).toFixed(2));
-      const max = parseFloat((base + 0.1 + next() * 0.2).toFixed(2));
-      series.push({ ts, avg, min, max });
-    }
+  for (let ts = activation.getTime(); ts < end; ts += intervalMs) {
+    const base = 4.0 + next() * 1.0; // 4.0 - 5.0
+    const avg = parseFloat(base.toFixed(2));
+    const min = parseFloat((base - 0.1 - next() * 0.2).toFixed(2));
+    const max = parseFloat((base + 0.1 + next() * 0.2).toFixed(2));
+    series.push({ ts: new Date(ts), avg, min, max });
   }
+  // Punto final exactamente en "última vista" (real - 12h)
+  const baseFinal = 4.0 + next() * 1.0;
+  series.push({
+    ts: new Date(end),
+    avg: parseFloat(baseFinal.toFixed(2)),
+    min: parseFloat((baseFinal - 0.1 - next() * 0.2).toFixed(2)),
+    max: parseFloat((baseFinal + 0.1 + next() * 0.2).toFixed(2)),
+  });
   return series;
 }
 DEVICES.forEach((d) => {
@@ -484,17 +491,17 @@ DEVICES.forEach((d) => {
 });
 
 /* ---------- JOURNEY DE CADA DEVICE ----------
-   Cronología coherente con el "ahora" de la demo (26 May 2026, 11:18).
+   Cronología coherente con el "ahora" de la demo (30 May 2026, 11:18).
    Ordenado del más reciente al más antiguo.
 */
 DEVICES.forEach((d) => {
   const originSite = SITES.find((s) => s.id === d.origin);
 
   // Calculamos stats de temperatura SOLO de los puntos durante el trayecto
-  // (desde "ruta iniciada 25 May 09:15" hasta "primera vista en destino 25 May 22:30")
+  // (desde recogida el 27 May hasta primera vista en destino el 29 May).
   // Filtramos los puntos de la serie que caigan en esa ventana.
-  const routeStart = new Date("2026-05-25T09:15:00");
-  const routeEnd = new Date("2026-05-25T22:30:00");
+  const routeStart = new Date("2026-05-27T09:15:00");
+  const routeEnd = new Date("2026-05-29T13:00:00");
   const routePoints = d.tempSeries.filter(
     (p) => p.ts >= routeStart && p.ts <= routeEnd,
   );
@@ -517,13 +524,13 @@ DEVICES.forEach((d) => {
       type: "info",
       title: "Lectura QR de visitante en stand AECOC",
       icon: "qr",
-      timestamp: "26 May 2026, 11:18",
+      timestamp: "30 May 2026, 11:18",
     },
     {
       type: "info",
       title: "Llegada al stand AECOC",
       icon: "check",
-      timestamp: "26 May 2026, 08:30",
+      timestamp: "30 May 2026, 08:30",
     },
     {
       type: "finished",
@@ -534,7 +541,7 @@ DEVICES.forEach((d) => {
       siteType2: "hub",
       icon: "route",
       timestamp:
-        "Última vista en origen: 25 May 2026, 18:42 — Primera vista en destino: 25 May 2026, 22:30",
+        "Última vista en origen: 27 May 2026, 18:42 — Primera vista en destino: 29 May 2026, 13:00",
       expandable: true,
       routeStats: {
         finalTemp: finalTemp.toFixed(2),
@@ -549,14 +556,14 @@ DEVICES.forEach((d) => {
       type: "info",
       title: "Información del producto actualizada",
       icon: "info",
-      timestamp: "25 May 2026, 08:00",
+      timestamp: "27 May 2026, 08:00",
       expandable: true,
     },
     {
       type: "info",
       title: "Dispositivo activado en origen",
       icon: "check",
-      timestamp: "25 May 2026, 07:45",
+      timestamp: "27 May 2026, 07:45",
     },
   ];
 });
