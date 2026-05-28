@@ -11,6 +11,19 @@ const state = {
   highlightedMarker: null,
 };
 
+// ---------- HELPERS ----------
+// "Última vista" = 12h antes de cuando el/la usuario abre la web,
+// para que la demo se sienta "viva" sin tocar la cronología del recorrido.
+function formatRelativeNow(offsetHours) {
+  const t = new Date(Date.now() + offsetHours * 3600 * 1000);
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const hh = String(t.getHours()).padStart(2, '0');
+  const mm = String(t.getMinutes()).padStart(2, '0');
+  return `${t.getDate()} ${months[t.getMonth()]} ${t.getFullYear()}, ${hh}:${mm}`;
+}
+function getLastSeenStr()      { return formatRelativeNow(-12); } // 12h antes del momento de visita
+function getArrivedAtSiteStr() { return formatRelativeNow(-15); } // 3h antes de "Última vista"
+
 // ---------- MAP INIT ----------
 const map = L.map('map', {
   zoomControl: true,
@@ -100,6 +113,44 @@ function renderSites() {
 // Para inspeccionar uno individual: click en el site → lista → click en device.
 
 renderSites();
+
+// ---------- "ESTÁS AQUÍ" POINTER ----------
+// Visible cuando el mapa está alejado, oculto al acercarse al site para no
+// estorbar. Los visitantes en el congreso (AECOC) ven directamente dónde están
+// respecto a las rutas.
+const HERE_ZOOM_THRESHOLD = 15;
+const youAreHereIcon = L.divIcon({
+  className: 'here-marker-wrap',
+  html: `
+    <div class="here-marker">
+      <div class="here-label">
+        ${ICONS.pin}
+        <span>Estás aquí</span>
+      </div>
+      <svg class="here-arrow" viewBox="0 0 20 44" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="10" y1="2" x2="10" y2="32" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+        <polygon points="10,42 4,30 16,30" fill="#ef4444"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [0, 0],
+  iconAnchor: [0, 0],
+});
+const aecocSite = getSiteById('site-aecoc');
+const youAreHereMarker = L.marker(aecocSite.coords, {
+  icon: youAreHereIcon,
+  interactive: false,
+  keyboard: false,
+  zIndexOffset: 1000,
+});
+function updateYouAreHereVisibility() {
+  const shouldShow = map.getZoom() < HERE_ZOOM_THRESHOLD;
+  const isShown = map.hasLayer(youAreHereMarker);
+  if (shouldShow && !isShown) youAreHereMarker.addTo(map);
+  else if (!shouldShow && isShown) map.removeLayer(youAreHereMarker);
+}
+map.on('zoomend', updateYouAreHereVisibility);
+updateYouAreHereVisibility();
 
 // Encuadre inicial mostrando todos los sites
 const bounds = L.latLngBounds(SITES.map(s => s.coords));
@@ -232,21 +283,38 @@ function openDevicePanelFromMap(deviceId) {
     <div class="info-row">${ICONS.map}<div><span class="label">Últimas coords:</span> <span class="value">${d.position[0].toFixed(7)}, ${d.position[1].toFixed(7)}</span></div></div>
     <div class="info-row">${ICONS.pin}<div><span class="label">Fuente de ubicación:</span> <span class="value">GPS</span></div></div>
     <div class="info-row">${ICONS.thermometer}<div><span class="value" style="color: #16a34a; font-weight: 600;">${d.tempSeries[d.tempSeries.length - 1].avg.toFixed(2)} °C</span></div></div>
-    <div style="font-size: 11px; color: #6b7280; margin-top: -4px; margin-left: 26px;">Actualizado: 26 May 2026, 11:18</div>
+    <div style="font-size: 11px; color: #6b7280; margin-top: -4px; margin-left: 26px;">Actualizado: ${getLastSeenStr()}</div>
 
     <div class="panel-actions">
       <button class="btn" id="btnShowDevice">${ICONS.signal} Ver dispositivo</button>
-      <button class="btn primary" id="btnShowRoute">${ICONS.route} Ver ruta</button>
+      <button class="btn primary" id="btnShowRoute">${ICONS.route} ${state.routeLine && state.routeDeviceId === d.id ? 'Ocultar ruta' : 'Ver ruta'}</button>
     </div>
   `;
   document.getElementById('btnShowDevice').addEventListener('click', () => goToDeviceDetail(d.id));
-  document.getElementById('btnShowRoute').addEventListener('click', () => drawRoute(d.id));
+  document.getElementById('btnShowRoute').addEventListener('click', () => toggleRoute(d.id));
   const backBtn = document.getElementById('btnBackToSite');
   if (backBtn) backBtn.addEventListener('click', () => openSitePanel(state.currentSiteId));
   openSidePanel();
 }
 
 // ---------- RUTAS EN EL MAPA ----------
+function toggleRoute(deviceId) {
+  if (state.routeLine && state.routeDeviceId === deviceId) {
+    clearRoute();
+  } else {
+    drawRoute(deviceId);
+  }
+}
+
+function updateRouteButton() {
+  const btn = document.getElementById('btnShowRoute');
+  if (!btn) return;
+  const deviceId = state.currentDeviceId;
+  if (!deviceId) return;
+  const isShowing = state.routeLine && state.routeDeviceId === deviceId;
+  btn.innerHTML = `${ICONS.route} ${isShowing ? 'Ocultar ruta' : 'Ver ruta'}`;
+}
+
 function drawRoute(deviceId) {
   clearRoute();
   const d = getDeviceById(deviceId);
@@ -260,6 +328,7 @@ function drawRoute(deviceId) {
   }).addTo(map);
 
   state.routeDeviceId = deviceId;
+  updateRouteButton();
 
   // En móvil: minimizar el bottom sheet para no tapar la ruta y mostrar
   // un banner inferior con el nombre del device para reabrir el panel.
@@ -281,6 +350,7 @@ function clearRoute() {
   state.routeDeviceId = null;
   hideRouteBanner();
   sidePanel.classList.remove('minimized');
+  updateRouteButton();
 }
 
 // Banner inferior que aparece cuando hay ruta dibujada en móvil
@@ -375,9 +445,9 @@ function goToDeviceDetail(deviceId) {
     </div>
 
     <div class="detail-summary">
-      <div class="summary-row">${ICONS.clock}<span class="label">Última vista</span><span class="value">26 May 2026, 11:18</span></div>
+      <div class="summary-row">${ICONS.clock}<span class="label">Última vista</span><span class="value">${getLastSeenStr()}</span></div>
       <div class="summary-row">${ICONS.pin}<span class="label">Última ubicación</span><span class="value"><span style="color: #6b7280; font-weight: 400; margin-right: 6px;">En site</span><span class="badge blue">${ICONS.home} AECOC Valencia</span></span></div>
-      <div class="summary-row" style="grid-column: span 2; padding-left: 26px; margin-top: -6px;"><span style="color: #6b7280; font-size: 12px;">desde 26 May 2026, 08:30 — hace 3 horas</span></div>
+      <div class="summary-row" style="grid-column: span 2; padding-left: 26px; margin-top: -6px;"><span style="color: #6b7280; font-size: 12px;">desde ${getArrivedAtSiteStr()} — hace 3 horas</span></div>
     </div>
 
     <div class="tabs">
@@ -402,7 +472,7 @@ function goToDeviceDetail(deviceId) {
       <div class="card">
         <h2>Telemetría</h2>
         <div class="info-row">${ICONS.alert}<div><span class="label" style="min-width: 140px; display: inline-block;">Alertas:</span> <span class="value">0</span></div></div>
-        <div class="info-row">${ICONS.clock}<div><span class="label" style="min-width: 140px; display: inline-block;">Última vista:</span> <span class="value">26 May 2026, 11:18</span></div></div>
+        <div class="info-row">${ICONS.clock}<div><span class="label" style="min-width: 140px; display: inline-block;">Última vista:</span> <span class="value">${getLastSeenStr()}</span></div></div>
         <div class="info-row">${ICONS.thermometer}<div><span class="label" style="min-width: 140px; display: inline-block;">Última temperatura:</span> <span class="value" style="color: #16a34a; font-weight: 600;">${d.tempSeries[d.tempSeries.length - 1].avg.toFixed(2)} °C</span></div></div>
         <div class="info-row">${ICONS.pin}<div><span class="label" style="min-width: 140px; display: inline-block;">Fuente ubicación:</span> <span class="value">GPS</span></div></div>
         <div class="info-row">${ICONS.map}<div><span class="label" style="min-width: 140px; display: inline-block;">Coordenadas:</span> <span class="value">${d.position[0].toFixed(7)}, ${d.position[1].toFixed(7)}</span></div></div>
@@ -411,7 +481,7 @@ function goToDeviceDetail(deviceId) {
     </div>
 
     <div class="card" style="margin-bottom: 16px;">
-      <h2>Información adicional <span style="font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px;">Actualizado: 25 May 2026, 08:00</span></h2>
+      <h2>Información adicional <span style="font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px;">Actualizado: 27 May 2026, 08:00</span></h2>
       <div class="additional-info">
         <div class="additional-info-fields">
           <div class="field-block"><div class="field-label">Producto</div><div class="field-value">${product.name}</div></div>
@@ -422,13 +492,19 @@ function goToDeviceDetail(deviceId) {
           <div class="field-block"><div class="field-label">Destino final</div><div class="field-value">${product.finalDestination}</div></div>
           <div class="field-block" style="grid-column: span 3;"><div class="field-label">Contenedor</div><div class="field-value">${product.container}</div></div>
         </div>
-        <img src="${product.image}" alt="${product.name}" onerror="this.style.display='none'">
+        <div class="additional-info-media">
+          <img src="${product.image}" alt="${product.name}" onerror="this.style.display='none'">
+          <div class="supplier-block">
+            <div class="supplier-label">Proveedor</div>
+            <img src="https://vicasol.es/wp-content/themes/vicasol/images/vicasol.svg" alt="Vicasol" class="supplier-logo" onerror="this.style.display='none'">
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="temp-chart-wrap" id="section-insights">
       <h2>Insights · Temperatura</h2>
-      <div class="temp-chart-subtitle">Últimos 7 días — Zona segura del producto: <strong style="color: #16a34a;">${product.targetTempMin}–${product.targetTempMax} °C</strong></div>
+      <div class="temp-chart-subtitle">Desde activación (27 May) — Zona segura del producto: <strong style="color: #16a34a;">${product.targetTempMin}–${product.targetTempMax} °C</strong></div>
       <div class="chart-legend">
         <div class="legend-item"><span class="legend-dot" style="border-color: #22c55e;"></span> Media</div>
         <div class="legend-item"><span class="legend-dot" style="border-color: #ef4444;"></span> Máximo</div>
@@ -671,17 +747,21 @@ function renderTempChart(device) {
     <text x="${PAD_L - 6}" y="${yScale(t) + 3}" text-anchor="end" font-size="${isMobile ? 10 : 11}" fill="#9ca3af">${t}</text>
   `).join('');
 
-  // X axis labels (días)
+  // X axis labels: un label por día desde activación (27 May) hasta el día
+  // de la última lectura (real - 12h). Se ajusta dinámicamente.
+  const firstTs = series[0].ts;
+  const lastTs = series[series.length - 1].ts;
+  const dayStart = new Date(firstTs.getFullYear(), firstTs.getMonth(), firstTs.getDate());
+  const dayEnd = new Date(lastTs.getFullYear(), lastTs.getMonth(), lastTs.getDate());
   const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date('2026-05-26T11:18:00');
-    d.setDate(d.getDate() - i);
-    days.push(d);
+  for (let cur = new Date(dayStart); cur <= dayEnd; cur.setDate(cur.getDate() + 1)) {
+    days.push(new Date(cur));
   }
-  // En mobile solo cada 2 días para que no se solapen
+  if (days.length < 2) days.push(new Date(dayEnd.getTime() + 24 * 3600 * 1000));
   const xLabelEls = days.map((d, i) => {
-    if (isMobile && i % 2 !== 0 && i !== 6) return '';
-    const x = PAD_L + (i / 6) * (W - PAD_L - PAD_R);
+    // En mobile, si hay más de 4 días, saltamos uno sí uno no
+    if (isMobile && days.length > 4 && i % 2 !== 0 && i !== days.length - 1) return '';
+    const x = PAD_L + (i / (days.length - 1)) * (W - PAD_L - PAD_R);
     const label = `${d.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]}`;
     return `<text x="${x}" y="${H - 14}" text-anchor="middle" font-size="${isMobile ? 10 : 11}" fill="#6b7280">${label}</text>`;
   }).join('');
@@ -746,3 +826,8 @@ const navMapMobile = document.getElementById('navMapMobile');
 const navDevicesMobile = document.getElementById('navDevicesMobile');
 if (navMapMobile) navMapMobile.addEventListener('click', goToMapView);
 if (navDevicesMobile) navDevicesMobile.addEventListener('click', () => renderDevicesList());
+
+// Selección por defecto al cargar: abrir el primer device y mostrar su ruta,
+// para que el usuario entienda inmediatamente que puede interactuar con el mapa.
+openDevicePanelFromMap(1);
+drawRoute(1);

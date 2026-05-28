@@ -97,6 +97,39 @@
     transform: rotate(45deg);
   }
 
+  /* "Estás aquí" pointer — visible al alejar el mapa.
+     Label flotando arriba con flecha apuntando hacia abajo al site marker,
+     sin solaparse con él. */
+  .here-marker-wrap { pointer-events: none; }
+  .here-marker {
+    position: relative; pointer-events: none;
+    animation: hereBob 1.8s ease-in-out infinite;
+  }
+  .here-marker .here-label {
+    position: absolute;
+    left: 50%; bottom: 50px;
+    transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #ef4444; color: white;
+    padding: 6px 12px 6px 10px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    white-space: nowrap; letter-spacing: 0.2px;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45), 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+  .here-marker .here-label svg { width: 13px; height: 13px; }
+  .here-marker .here-arrow {
+    position: absolute;
+    left: -10px; bottom: 4px;
+    width: 20px; height: 44px;
+    overflow: visible;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+  }
+  @keyframes hereBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+  }
+
   /* Side panel (slides in from right) */
   .side-panel {
     position: absolute; top: 16px; right: 16px;
@@ -293,6 +326,18 @@
     width: 100%; aspect-ratio: 1; object-fit: cover;
     border-radius: 10px;
     background: #f3f4f6;
+  }
+  .additional-info-media { display: flex; flex-direction: column; gap: 12px; }
+  .additional-info .supplier-block {
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 10px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .additional-info .supplier-label { font-size: 11px; color: #6b7280; font-weight: 500; }
+  .additional-info .supplier-logo {
+    width: auto; height: 56px; aspect-ratio: auto;
+    object-fit: contain; border-radius: 0; background: transparent;
+    align-self: flex-start;
   }
   .field-block .field-label { font-size: 12px; color: #6b7280; margin-bottom: 2px; }
   .field-block .field-value { font-size: 14px; font-weight: 500; color: #1f2937; }
@@ -619,11 +664,12 @@
 
     /* Información adicional: foto arriba, fields abajo */
     .additional-info { grid-template-columns: 1fr; gap: 14px; }
+    .additional-info-media { order: -1; }
     .additional-info img {
       aspect-ratio: 16/9;
       width: 100%;
-      order: -1;
     }
+    .additional-info .supplier-logo { aspect-ratio: auto; width: auto; height: 44px; }
     .additional-info-fields { grid-template-columns: 1fr 1fr; gap: 10px 16px; }
     .field-block .field-label { font-size: 11px; }
     .field-block .field-value { font-size: 13px; }
@@ -756,7 +802,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="./data.js?v=11"></script>
-<script src="./app.js?v=11"></script>
+<script src="./data.js?v=20"></script>
+<script src="./app.js?v=20"></script>
 </body>
 </html>
